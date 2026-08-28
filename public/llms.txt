@@ -1,0 +1,99 @@
+# WhenFree: Agent-Native Scheduling Platform (LLM Guidance)
+
+> WhenFree is an API-first, zero-install multi-party meeting scheduling service designed for autonomous AI agents and humans.
+
+## 1. Core Principles for AI Agents
+- **Zero-Install Interaction**: You do NOT need MCP tools or plugins. You interact with WhenFree using standard HTTP GET and POST requests.
+- **Content Negotiation**: Requesting any meeting URL (e.g. `https://{domain}/meet/{eventId}`) with `Accept: application/json` returns a complete machine-readable contract.
+- **Timezone Awareness**: Provide ISO 8601 timestamps (with offset or UTC `Z`). WhenFree automatically handles cross-timezone conversions.
+- **Soft Preferences**: Submit scalar weights ($0.0 \le w \le 1.0$) to indicate flexible vs preferred availability.
+
+---
+
+## 2. Interaction Protocol (One-Shot Flow)
+
+### Step 1: Read Event Parameters
+Fetch the target meeting URL with `Accept: application/json`:
+```http
+GET /meet/{eventId} HTTP/1.1
+Host: {domain}
+Accept: application/json
+```
+
+**Response Example:**
+```json
+{
+  "event_id": "meet_team_sync_2026",
+  "title": "Quarterly Strategy Sync",
+  "organizer_timezone": "Asia/Seoul",
+  "duration_minutes": 60,
+  "date_range": {
+    "start": "2026-09-01T09:00:00+09:00",
+    "end": "2026-09-05T21:00:00+09:00"
+  },
+  "action_required": "POST available time intervals to submit_endpoint with user identifier.",
+  "submit_endpoint": "https://{domain}/api/v1/meet/meet_team_sync_2026/respond",
+  "payload_schema": {
+    "user_name": "string (required)",
+    "user_id": "string (optional/agent-assigned)",
+    "timezone": "string (IANA)",
+    "slots": [
+      {
+        "start": "ISO8601 string",
+        "end": "ISO8601 string",
+        "weight": "float (0.0=unavailable, 0.5=okay, 1.0=preferred)"
+      }
+    ],
+    "notes": "string (optional)"
+  }
+}
+```
+
+### Step 2: Submit Availability
+Inspect your user's calendar within the specified `date_range`, extract free blocks, and POST to `submit_endpoint`:
+```http
+POST /api/v1/meet/{eventId}/respond HTTP/1.1
+Host: {domain}
+Content-Type: application/json
+
+{
+  "user_name": "Alice Park (MUST be the user's real human name. Ask the user if unknown, never use generic 'AI Assistant')",
+  "user_id": "agent_alice_456",
+  "timezone": "Asia/Seoul",
+  "slots": [
+    {
+      "start": "2026-09-01T10:00:00+09:00",
+      "end": "2026-09-01T12:00:00+09:00",
+      "weight": 1.0
+    },
+    {
+      "start": "2026-09-01T14:00:00+09:00",
+      "end": "2026-09-01T18:00:00+09:00",
+      "weight": 0.5
+    }
+  ],
+  "notes": "Afternoon slots have soft travel buffer preference."
+}
+```
+
+**Weight & Travel Buffer Guidelines:**
+- `1.0` (Preferred): Completely free time block with no adjacent conflicts.
+- `0.75` (Available): Regular open time.
+- `0.5` (Moderate / Travel Buffer): 
+  - 30-minute buffer window immediately **before** or **after** an existing busy event (to allow travel and prep time).
+  - Flexible / movable internal meetings.
+- `0.0` (Unavailable): Hard conflict / busy. Omit or set to 0.0.
+
+### Step 3: Receive Instant Consensus
+WhenFree returns the updated Top 3 globally optimal time windows maximizing total attendee availability.
+
+---
+
+## 3. Global Endpoints & Discovery
+- `GET /llms.txt`: This documentation file.
+- `GET /.well-known/agent.json`: Agent protocol discovery descriptor.
+- `GET /api/v1/openapi.json`: OpenAPI 3.1 schema for function-calling LLMs.
+- `POST /api/v1/meet`: Create a new scheduling poll.
+- `GET /meet/{eventId}`: Content-negotiated event endpoint (HTML for humans, JSON for agents).
+- `POST /api/v1/meet/{eventId}/respond`: Submit / update availability.
+- `GET /api/v1/meet/{eventId}/consensus`: Get real-time heatmap & top 3 recommendations.

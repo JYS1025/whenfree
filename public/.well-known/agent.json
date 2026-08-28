@@ -1,0 +1,46 @@
+{
+  "name": "WhenFree",
+  "description": "Agent-Native Zero-Install Multi-Party Scheduling Platform",
+  "version": "1.0.0",
+  "protocol_version": "1.0",
+  "llms_txt": "/llms.txt",
+  "openapi_spec": "/api/v1/openapi.json",
+  "capabilities": {
+    "zero_install": true,
+    "content_negotiation": true,
+    "soft_constraints": true,
+    "utc_normalization": true,
+    "top_k_consensus": true
+  },
+  "endpoints": {
+    "get_event": {
+      "method": "GET",
+      "path": "/meet/{eventId}",
+      "headers": {
+        "Accept": "application/json"
+      },
+      "description": "Retrieve event constraints, date range, and response submission schema."
+    },
+    "respond_event": {
+      "method": "POST",
+      "path": "/api/v1/meet/{eventId}/respond",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "description": "Submit participant availability intervals with preference weights (0.0 to 1.0)."
+    },
+    "get_consensus": {
+      "method": "GET",
+      "path": "/api/v1/meet/{eventId}/consensus",
+      "description": "Retrieve real-time heatmap matrix and Top 3 optimal time windows."
+    },
+    "create_event": {
+      "method": "POST",
+      "path": "/api/v1/meet",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "description": "Create a new multi-party scheduling poll."
+    }
+  }
+}
