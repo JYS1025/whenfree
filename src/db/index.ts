@@ -468,4 +468,25 @@ export const dbOperations = {
 
     return { participant: pRecord, slots: insertedSlots };
   },
+
+  async cleanExpiredEvents(retentionDays: number = 30): Promise<{ deleted: boolean; cutoff_date: string }> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+    const cutoffStr = cutoffDate.toISOString().split("T")[0]; // YYYY-MM-DD
+
+    if (isTursoEnabled()) {
+      await executeTursoQueries([
+        {
+          sql: "DELETE FROM events WHERE end_date < ?",
+          args: [cutoffStr],
+        },
+      ]);
+      return { deleted: true, cutoff_date: cutoffStr };
+    }
+
+    const db = getLocalDb();
+    const stmt = db.prepare("DELETE FROM events WHERE end_date < ?");
+    stmt.run(cutoffStr);
+    return { deleted: true, cutoff_date: cutoffStr };
+  },
 };

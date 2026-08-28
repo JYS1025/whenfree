@@ -67,6 +67,9 @@ export async function POST(request: NextRequest) {
       end_time: data.end_time,
     });
 
+    // Background lazy cleanup of events expired > 30 days (non-blocking)
+    dbOperations.cleanExpiredEvents(30).catch(() => {});
+
     const origin = request.nextUrl.origin;
 
     return NextResponse.json(
