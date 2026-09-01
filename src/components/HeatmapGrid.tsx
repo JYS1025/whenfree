@@ -73,19 +73,6 @@ export default function HeatmapGrid({
     return bStart >= wStart && bEnd <= wEnd;
   };
 
-  // Check if bucket belongs to any top recommendation (Top 1~3)
-  const isInAnyTopWindow = (bucket: HeatmapBucket | undefined) => {
-    if (participants.length === 0 || !top_recommendations || top_recommendations.length === 0 || !bucket) return false;
-    const bStart = new Date(bucket.start_time).getTime();
-    const bEnd = new Date(bucket.end_time).getTime();
-    return top_recommendations.some((win) => {
-      if (win.score <= 0) return false;
-      const wStart = new Date(win.start_time).getTime();
-      const wEnd = new Date(win.end_time).getTime();
-      return bStart >= wStart && bEnd <= wEnd;
-    });
-  };
-
   const isInActiveSelection = (dIdx: number, tIdx: number) => {
     if (!isDragging || !dragStart || !dragCurrent) return false;
     const minD = Math.min(dragStart.dateIdx, dragCurrent.dateIdx);
@@ -229,36 +216,35 @@ export default function HeatmapGrid({
     }
   };
 
-  // Vivid When2meet Group Cell Color Scaler
+  // Distinct Color Scaler: Gold/Amber for Max Possible, Green for Partial
   const getGroupCellColor = (bucket: HeatmapBucket | undefined) => {
     if (!bucket) return "bg-zinc-950/80 border-zinc-900";
 
     if (filteredParticipantId) {
       const pData = bucket.participant_breakdown.find((p) => p.participant_id === filteredParticipantId);
       if (!pData || pData.weight === 0) return "bg-zinc-950/80 border-zinc-900";
-      if (pData.weight >= 0.9) return "bg-emerald-500 text-zinc-950 font-bold border-emerald-300";
-      return "bg-amber-500 text-zinc-950 font-bold border-amber-300";
+      if (pData.weight >= 0.9) return "bg-amber-400 text-zinc-950 font-bold border-amber-300";
+      return "bg-amber-600/80 text-zinc-100 font-semibold border-amber-500";
     }
 
     if (bucket.total_participants === 0 || bucket.available_count === 0) {
       return "bg-zinc-950/80 border-zinc-900 hover:border-zinc-700";
     }
 
+    // ★ ALL MAX AVAILABLE SLOTS GET A COMPLETELY DISTINCT GOLD/AMBER COLOR ★
+    if (bucket.is_max_available) {
+      return "bg-amber-400 text-zinc-950 font-bold border-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.35)]";
+    }
+
     const availableRatio = bucket.total_participants > 0 ? bucket.available_count / bucket.total_participants : 0;
 
-    // 100% All available
-    if (availableRatio >= 1.0) {
-      return "bg-emerald-500 text-zinc-950 font-bold border-emerald-400";
-    }
-    // 70% or more available
+    // Partial availability (Green scale)
     if (availableRatio >= 0.7) {
       return "bg-emerald-600 text-white font-bold border-emerald-500";
     }
-    // 40% or more available
     if (availableRatio >= 0.4) {
       return "bg-emerald-700 text-emerald-100 font-semibold border-emerald-600";
     }
-    // At least 1 person available
     return "bg-emerald-900/90 text-emerald-200 font-medium border-emerald-800";
   };
 
@@ -462,7 +448,7 @@ export default function HeatmapGrid({
         {/* ========================================================================= */}
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 sm:p-5 space-y-3.5 flex flex-col justify-between">
           <div className="space-y-3">
-            {/* Header */}
+            {/* Header with Legend */}
             <div className="border-b border-zinc-800 pb-2.5">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold text-zinc-100 flex items-center gap-1.5">
@@ -470,14 +456,33 @@ export default function HeatmapGrid({
                   <span className="text-[11px] font-normal text-zinc-400">({participants.length}명 참여)</span>
                 </h2>
                 {max_available_count > 0 && (
-                  <span className="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60">
-                    최대 {max_available_count}/{participants.length}명 가능
+                  <span className="text-[11px] font-mono font-bold text-amber-300 bg-amber-950/70 px-2 py-0.5 rounded border border-amber-700/80">
+                    최다 {max_available_count}/{participants.length}명 가능
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-zinc-400 mt-0.5">
-                {t.groupSubtitle}
-              </p>
+              <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+                <p className="text-[11px] text-zinc-400">
+                  {t.groupSubtitle}
+                </p>
+                {/* Color Legend */}
+                {participants.length > 0 && (
+                  <div className="flex items-center gap-2.5 text-[10px] font-mono text-zinc-400">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2.5 h-2.5 rounded-[2px] bg-amber-400 border border-amber-300" />
+                      <span className="text-amber-300 font-semibold">최다 가능</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2.5 h-2.5 rounded-[2px] bg-emerald-600 border border-emerald-500" />
+                      <span>일부 가능</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2.5 h-2.5 rounded-[2px] bg-zinc-950 border border-zinc-800" />
+                      <span>불가</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Hover Breakdown Status Banner */}
@@ -490,8 +495,8 @@ export default function HeatmapGrid({
                         {hoveredBucket.date} {hoveredBucket.time_label}
                       </span>
                       {hoveredBucket.is_max_available && (
-                        <span className="text-[10px] text-emerald-400 bg-emerald-950 px-1.5 py-0.2 rounded border border-emerald-800 font-bold">
-                          ★ 최적 시간
+                        <span className="text-[10px] text-amber-300 bg-amber-950 px-1.5 py-0.2 rounded border border-amber-700 font-bold">
+                          최다 가능 시간
                         </span>
                       )}
                     </div>
@@ -499,7 +504,7 @@ export default function HeatmapGrid({
                       {hoveredBucket.available_count > 0 ? (
                         <span>
                           가능:{" "}
-                          <span className="text-emerald-300 font-semibold">
+                          <span className={hoveredBucket.is_max_available ? "text-amber-300 font-semibold" : "text-emerald-300 font-semibold"}>
                             {hoveredBucket.participant_breakdown
                               .filter((p) => p.weight > 0)
                               .map((p) => p.name)
@@ -513,7 +518,7 @@ export default function HeatmapGrid({
                   </div>
 
                   <div className="text-right">
-                    <span className="text-base font-mono font-bold text-emerald-400">
+                    <span className={`text-base font-mono font-bold ${hoveredBucket.is_max_available ? "text-amber-300" : "text-emerald-400"}`}>
                       {hoveredBucket.available_count}
                     </span>
                     <span className="text-xs font-mono text-zinc-500">
@@ -564,16 +569,13 @@ export default function HeatmapGrid({
                           const colorClass = getGroupCellColor(bucket);
 
                           const isHoveredWin = isInHoveredWindow(bucket);
-                          const isTopWin = isInAnyTopWindow(bucket);
                           const isMax = bucket?.is_max_available;
 
                           let ringClass = "";
                           if (isHoveredWin) {
-                            ringClass = "ring-2 ring-amber-400 z-10 scale-[1.03] shadow-[0_0_8px_rgba(251,191,36,0.5)]";
+                            ringClass = "ring-2 ring-white z-10 scale-[1.04] shadow-[0_0_10px_rgba(255,255,255,0.7)]";
                           } else if (isMax) {
-                            ringClass = "ring-1 ring-emerald-300 shadow-[0_0_6px_rgba(16,185,129,0.3)]";
-                          } else if (isTopWin) {
-                            ringClass = "ring-1 ring-emerald-500/60";
+                            ringClass = "ring-1 ring-amber-300/90";
                           }
 
                           return (
@@ -581,12 +583,11 @@ export default function HeatmapGrid({
                               key={cellKey}
                               onMouseEnter={() => setHoveredBucket(bucket || null)}
                               onMouseLeave={() => setHoveredBucket(null)}
-                              className={`h-5 rounded-[2px] border text-[9px] font-mono flex items-center justify-center cursor-default transition-all relative ${colorClass} ${ringClass}`}
+                              className={`h-5 rounded-[2px] border text-[10px] font-mono flex items-center justify-center cursor-default transition-all relative ${colorClass} ${ringClass}`}
                             >
                               {bucket && bucket.available_count > 0 ? (
-                                <span className="font-bold flex items-center gap-0.5">
+                                <span className="font-bold">
                                   {bucket.available_count}
-                                  {isMax && <span className="text-[7px] text-amber-300">★</span>}
                                 </span>
                               ) : null}
                             </div>
