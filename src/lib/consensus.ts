@@ -9,6 +9,7 @@ export interface HeatmapBucket {
   total_weight: number;
   available_count: number;
   total_participants: number;
+  is_max_available: boolean; // True if this cell has the highest available_count (>0)
   participant_breakdown: Array<{
     participant_id: string;
     name: string;
@@ -36,6 +37,7 @@ export interface RecommendedWindow {
 export interface ConsensusResult {
   event_id: string;
   total_participants: number;
+  max_available_count: number;
   heatmap: HeatmapBucket[];
   top_recommendations: RecommendedWindow[];
   dates: string[];
@@ -45,18 +47,37 @@ export interface ConsensusResult {
 const BUCKET_MINUTES = 30; // 30-min granularity for crisp UI & agent scheduling
 
 /**
- * Parses date string (YYYY-MM-DD) and time (HH:mm) with an IANA timezone offset
+ * Deterministically generates all YYYY-MM-DD date strings in the range [startDateStr, endDateStr]
+ * using UTC date math to avoid any local timezone date skew.
+ */
+function getDatesInRange(startDateStr: string, endDateStr: string): string[] {
+  const dates: string[] = [];
+  const [sy, sm, sd] = startDateStr.split("-").map(Number);
+  const [ey, em, ed] = endDateStr.split("-").map(Number);
+
+  const current = new Date(Date.UTC(sy, sm - 1, sd));
+  const end = new Date(Date.UTC(ey, em - 1, ed));
+
+  while (current <= end) {
+    const y = current.getUTCFullYear();
+    const m = String(current.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(current.getUTCDate()).padStart(2, "0");
+    dates.push(`${y}-${m}-${d}`);
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+/**
+ * Parses date string (YYYY-MM-DD) and time (HH:mm) with an IANA timezone to exact UTC Date.
  */
 function createUtcDate(dateStr: string, timeStr: string, timezone: string): Date {
-  // Approximate local to UTC using standard Date parsing or Intl
-  // For standard compatibility, construct ISO-like datetime
   const [year, month, day] = dateStr.split("-").map(Number);
   const [hours, minutes] = timeStr.split(":").map(Number);
 
-  // Create a UTC date as base
-  const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0));
+  // UTC candidate guess
+  const utcCandidate = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0));
 
-  // Determine timezone offset in minutes at this date
   try {
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: timezone,
@@ -69,24 +90,23 @@ function createUtcDate(dateStr: string, timeStr: string, timezone: string): Date
       hour12: false,
     });
 
-    const parts = formatter.formatToParts(utcDate);
-    const getPart = (type: string) => Number(parts.find((p) => p.type === type)?.value || 0);
+    const parts = formatter.formatToParts(utcCandidate);
+    const getVal = (type: string) => Number(parts.find((p) => p.type === type)?.value || 0);
 
-    const tzYear = getPart("year");
-    const tzMonth = getPart("month");
-    const tzDay = getPart("day");
-    let tzHour = getPart("hour");
+    const tzYear = getVal("year");
+    const tzMonth = getVal("month");
+    const tzDay = getVal("day");
+    let tzHour = getVal("hour");
     if (tzHour === 24) tzHour = 0;
-    const tzMin = getPart("minute");
+    const tzMin = getVal("minute");
 
-    const targetTzDateInUtc = Date.UTC(tzYear, tzMonth - 1, tzDay, tzHour, tzMin, 0);
-    const diffMs = targetTzDateInUtc - utcDate.getTime();
+    const tzDateInUtcMs = Date.UTC(tzYear, tzMonth - 1, tzDay, tzHour, tzMin, 0);
+    const offsetMs = tzDateInUtcMs - utcCandidate.getTime();
 
-    // Invert difference to get exact UTC representation for the given local time
-    return new Date(utcDate.getTime() - diffMs);
+    // Adjust candidate by exact timezone offset
+    return new Date(utcCandidate.getTime() - offsetMs);
   } catch {
-    // Fallback if timezone not recognized
-    return utcDate;
+    return utcCandidate;
   }
 }
 
@@ -95,14 +115,7 @@ export function calculateConsensus(
   participants: ParticipantRecord[],
   slots: TimeSlotRecord[]
 ): ConsensusResult {
-  const dates: string[] = [];
-  const curr = new Date(event.start_date);
-  const end = new Date(event.end_date);
-
-  while (curr <= end) {
-    dates.push(curr.toISOString().split("T")[0]);
-    curr.setDate(curr.getDate() + 1);
-  }
+  const dates = getDatesInRange(event.start_date, event.end_date);
 
   // Generate daily time intervals
   const [startH, startM] = event.start_time.split(":").map(Number);
@@ -117,7 +130,8 @@ export function calculateConsensus(
     timeLabels.push(`${hh}:${mm}`);
   }
 
-  const heatmap: HeatmapBucket[] = [];
+  const rawHeatmap: HeatmapBucket[] = [];
+  let maxAvailableCount = 0;
 
   // Generate all buckets
   for (const dateStr of dates) {
@@ -125,8 +139,8 @@ export function calculateConsensus(
       const bucketStart = createUtcDate(dateStr, timeLabel, event.organizer_timezone);
       const bucketEnd = new Date(bucketStart.getTime() + BUCKET_MINUTES * 60 * 1000);
 
-      const bucketStartIso = bucketStart.toISOString();
-      const bucketEndIso = bucketEnd.toISOString();
+      const bucketStartMs = bucketStart.getTime();
+      const bucketEndMs = bucketEnd.getTime();
 
       let totalWeight = 0;
       let availableCount = 0;
@@ -134,16 +148,15 @@ export function calculateConsensus(
 
       for (const p of participants) {
         // Find participant's slots overlapping with [bucketStart, bucketEnd]
-        const pSlots = slots.filter(
-          (s) =>
-            s.participant_id === p.id &&
-            new Date(s.start_time) < bucketEnd &&
-            new Date(s.end_time) > bucketStart
-        );
+        const pSlots = slots.filter((s) => {
+          if (s.participant_id !== p.id) return false;
+          const sStart = new Date(s.start_time).getTime();
+          const sEnd = new Date(s.end_time).getTime();
+          return sStart < bucketEndMs && sEnd > bucketStartMs;
+        });
 
         let weight = 0;
         if (pSlots.length > 0) {
-          // Take highest weight if multiple slots touch this bucket
           weight = Math.max(...pSlots.map((s) => s.weight));
         }
 
@@ -163,27 +176,39 @@ export function calculateConsensus(
         });
       }
 
+      if (availableCount > maxAvailableCount) {
+        maxAvailableCount = availableCount;
+      }
+
       const score = participants.length > 0 ? totalWeight / participants.length : 0;
 
-      heatmap.push({
-        start_time: bucketStartIso,
-        end_time: bucketEndIso,
+      rawHeatmap.push({
+        start_time: bucketStart.toISOString(),
+        end_time: bucketEnd.toISOString(),
         date: dateStr,
         time_label: timeLabel,
         score: Number(score.toFixed(3)),
         total_weight: totalWeight,
         available_count: availableCount,
         total_participants: participants.length,
+        is_max_available: false, // Will be set below
         participant_breakdown: breakdown,
       });
     }
   }
 
+  // Mark all cells that have the highest availability (if > 0)
+  const heatmap = rawHeatmap.map((b) => ({
+    ...b,
+    is_max_available: maxAvailableCount > 0 && b.available_count === maxAvailableCount,
+  }));
+
   // If no participants have submitted yet, return empty recommendations
-  if (participants.length === 0) {
+  if (participants.length === 0 || maxAvailableCount === 0) {
     return {
       event_id: event.id,
-      total_participants: 0,
+      total_participants: participants.length,
+      max_available_count: 0,
       heatmap,
       top_recommendations: [],
       dates,
@@ -241,14 +266,13 @@ export function calculateConsensus(
       const startBucket = windowBuckets[0];
       const endBucket = windowBuckets[windowBuckets.length - 1];
 
-      // For each participant, calculate effective weight over the whole window (bottleneck min weight)
+      // For each participant, calculate effective bottleneck weight over the window
       const fullyAvailable: string[] = [];
       const flexible: string[] = [];
       const unavailable: string[] = [];
       let windowTotalWeight = 0;
 
       for (const p of participants) {
-        // Find min weight across window buckets
         const weights = windowBuckets.map((b) => {
           const pb = b.participant_breakdown.find((x) => x.participant_id === p.id);
           return pb ? pb.weight : 0;
@@ -265,7 +289,10 @@ export function calculateConsensus(
         }
       }
 
-      const score = participants.length > 0 ? windowTotalWeight / participants.length : 1.0;
+      // Only consider windows where at least one person has availability
+      if (fullyAvailable.length === 0 && flexible.length === 0) continue;
+
+      const score = participants.length > 0 ? windowTotalWeight / participants.length : 0;
       const pct = Math.round(score * 100);
 
       candidateWindows.push({
@@ -294,13 +321,12 @@ export function calculateConsensus(
     return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
   });
 
-  // Pick Top 3 diverse recommendations (avoid identical start times)
+  // Pick Top 5 diverse recommendations (avoid identical start times)
   const topRecommendations: RecommendedWindow[] = [];
   const selectedStarts = new Set<string>();
 
   for (const win of candidateWindows) {
-    if (topRecommendations.length >= 3) break;
-    // Basic deduplication
+    if (topRecommendations.length >= 5) break;
     if (!selectedStarts.has(win.start_time)) {
       selectedStarts.add(win.start_time);
       topRecommendations.push({
@@ -313,6 +339,7 @@ export function calculateConsensus(
   return {
     event_id: event.id,
     total_participants: participants.length,
+    max_available_count: maxAvailableCount,
     heatmap,
     top_recommendations: topRecommendations,
     dates,

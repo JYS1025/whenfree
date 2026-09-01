@@ -23,6 +23,7 @@ export default function MeetPage({ params }: { params: Promise<{ eventId: string
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedAgentBundle, setCopiedAgentBundle] = useState(false);
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
+  const [hoveredWindow, setHoveredWindow] = useState<any>(null);
 
   const loadData = async () => {
     try {
@@ -190,6 +191,8 @@ export default function MeetPage({ params }: { params: Promise<{ eventId: string
         recommendations={consensus.top_recommendations}
         eventTitle={event.title}
         durationMinutes={event.duration_minutes}
+        hoveredWindow={hoveredWindow}
+        onHoverWindow={setHoveredWindow}
       />
 
       {/* When2meet 2-Column Side-by-Side Grid Workspace */}
@@ -198,6 +201,7 @@ export default function MeetPage({ params }: { params: Promise<{ eventId: string
         participants={participants}
         consensus={consensus}
         onAvailabilitySubmitted={loadData}
+        hoveredWindow={hoveredWindow}
       />
 
       {/* Modal */}
