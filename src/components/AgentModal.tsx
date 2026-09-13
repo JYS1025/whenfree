@@ -63,7 +63,13 @@ export function generateAgentBundle(
   "notes": "기존 일정 전후 30분 이동 버퍼(0.5) 포함"
 }
 \`\`\`
-*(가중치 안내: 1.0 = 선호/완전가능, 0.5 = 이동버퍼/조율가능, 0.0 = 불가능)*`;
+*(가중치 안내: 1.0 = 선호/완전가능, 0.5 = 이동버퍼/조율가능, 0.0 = 불가능)*
+
+### 5. 일정 수정 및 취소 (삭제) API
+- **일정 수정**: 같은 \`user_name\`으로 새로운 시간표를 POST 전송하면 이전 일정이 최신 일정으로 자동 덮어쓰기됩니다.
+- **일정 취소 (삭제)**: 사용자가 등록한 일정을 삭제하거나 취소하길 원하면, 아래와 같이 DELETE 요청을 전송하세요:
+  \`DELETE ${submitUrl}?user_name=<사용자실명>\`
+  (또는 JSON Body: \`{"user_name": "<사용자실명>"}\` 로 DELETE 전송)`;
   }
 
   return `# AI Assistant Instructions: ${event.title}
@@ -105,7 +111,13 @@ Submit availability via HTTP POST to \`${submitUrl}\`:
   "notes": "Includes 30m travel/prep buffer (0.5) around existing meetings"
 }
 \`\`\`
-*(Weight: 1.0 = preferred, 0.5 = moderate/buffer, 0.0 = busy)*`;
+*(Weight: 1.0 = preferred, 0.5 = moderate/buffer, 0.0 = busy)*
+
+### 5. Update & Cancellation (Delete) Protocol
+- **Update**: Re-submitting a POST request with the same \`user_name\` automatically replaces existing availability.
+- **Cancel / Delete**: If the user asks to cancel or remove their submission, send an HTTP DELETE request to:
+  \`DELETE ${submitUrl}?user_name=<UserRealName>\`
+  (or send \`{"user_name": "<UserRealName>"}\` via DELETE body).`;
 }
 
 export default function AgentModal({ event, meetUrl, submitUrl, isOpen, onClose }: Props) {

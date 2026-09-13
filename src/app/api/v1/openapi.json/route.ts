@@ -170,6 +170,52 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        delete: {
+          summary: "Remove participant availability submission",
+          description: "Deletes a participant's submission from the meeting poll by user_name or participant_id.",
+          operationId: "removeAvailability",
+          parameters: [
+            {
+              name: "eventId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "user_name",
+              in: "query",
+              required: false,
+              schema: { type: "string" },
+              description: "Participant real human name to delete",
+            },
+            {
+              name: "participant_id",
+              in: "query",
+              required: false,
+              schema: { type: "string" },
+              description: "Participant ID to delete",
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Submission deleted and updated consensus returned",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean" },
+                      message: { type: "string" },
+                      remaining_participants: { type: "array", items: { type: "string" } },
+                      total_participants: { type: "integer" },
+                      top_recommendations: { type: "array", items: { type: "object" } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       "/api/v1/meet/{eventId}/consensus": {
         get: {
