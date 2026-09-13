@@ -29,6 +29,11 @@
       },
       "description": "Submit participant availability intervals with preference weights (0.0 to 1.0)."
     },
+    "remove_response": {
+      "method": "DELETE",
+      "path": "/api/v1/meet/{eventId}/respond",
+      "description": "Remove participant availability submission by user_name or participant_id."
+    },
     "get_consensus": {
       "method": "GET",
       "path": "/api/v1/meet/{eventId}/consensus",
@@ -41,6 +46,11 @@
         "Content-Type": "application/json"
       },
       "description": "Create a new multi-party scheduling poll."
+    },
+    "delete_event": {
+      "method": "DELETE",
+      "path": "/api/v1/meet/{eventId}",
+      "description": "Delete entire scheduling poll and all participant responses."
     }
   }
 }

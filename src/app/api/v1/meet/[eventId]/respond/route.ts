@@ -143,3 +143,91 @@ export async function POST(
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ eventId: string }> }
+) {
+  try {
+    const { eventId } = await params;
+    const event = await dbOperations.getEvent(eventId);
+
+    if (!event) {
+      return NextResponse.json(
+        { error: "EventNotFound", message: `Event with ID '${eventId}' was not found.` },
+        { status: 404 }
+      );
+    }
+
+    let userName: string | undefined;
+    let participantId: string | undefined;
+
+    // Check query params first
+    const searchParams = request.nextUrl.searchParams;
+    userName = searchParams.get("user_name") || undefined;
+    participantId = searchParams.get("participant_id") || undefined;
+
+    // Check body if JSON provided
+    try {
+      const body = await request.json();
+      if (body) {
+        userName = body.user_name || userName;
+        participantId = body.participant_id || participantId;
+      }
+    } catch {
+      // Body may be empty if using query params
+    }
+
+    if (!userName && !participantId) {
+      return NextResponse.json(
+        {
+          error: "MissingIdentifier",
+          message: "Please provide either 'user_name' or 'participant_id' to remove submission.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (participantId) {
+      await dbOperations.deleteParticipant(participantId);
+    } else if (userName) {
+      const deleted = await dbOperations.deleteParticipantByName(eventId, userName);
+      if (!deleted) {
+        return NextResponse.json(
+          {
+            error: "ParticipantNotFound",
+            message: `Participant '${userName}' was not found in event '${eventId}'.`,
+          },
+          { status: 404 }
+        );
+      }
+    }
+
+    const fullData = (await dbOperations.getEventFull(eventId))!;
+    const consensus = calculateConsensus(
+      fullData.event,
+      fullData.participants,
+      fullData.slots
+    );
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: `Submission successfully removed.`,
+        remaining_participants: fullData.participants.map((p) => p.name),
+        total_participants: fullData.participants.length,
+        top_recommendations: consensus.top_recommendations,
+      },
+      {
+        status: 200,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      }
+    );
+  } catch (error) {
+    console.error("Error removing participant submission:", error);
+    return NextResponse.json(
+      { error: "InternalServerError", message: "Failed to remove submission." },
+      { status: 500 }
+    );
+  }
+}

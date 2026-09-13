@@ -95,5 +95,7 @@ WhenFree returns the updated Top 3 globally optimal time windows maximizing tota
 - `GET /api/v1/openapi.json`: OpenAPI 3.1 schema for function-calling LLMs.
 - `POST /api/v1/meet`: Create a new scheduling poll.
 - `GET /meet/{eventId}`: Content-negotiated event endpoint (HTML for humans, JSON for agents).
+- `DELETE /api/v1/meet/{eventId}`: Delete entire meeting poll.
 - `POST /api/v1/meet/{eventId}/respond`: Submit / update availability.
+- `DELETE /api/v1/meet/{eventId}/respond`: Remove participant submission (by `user_name` or `participant_id`).
 - `GET /api/v1/meet/{eventId}/consensus`: Get real-time heatmap & top 3 recommendations.

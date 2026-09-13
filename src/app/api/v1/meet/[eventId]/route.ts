@@ -80,3 +80,39 @@ export async function GET(
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ eventId: string }> }
+) {
+  try {
+    const { eventId } = await params;
+    const event = await dbOperations.getEvent(eventId);
+
+    if (!event) {
+      return NextResponse.json(
+        { error: "EventNotFound", message: `Event with ID '${eventId}' was not found.` },
+        { status: 404 }
+      );
+    }
+
+    await dbOperations.deleteEvent(eventId);
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: `Meeting '${eventId}' and all associated availability data have been deleted.`,
+      },
+      {
+        status: 200,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      }
+    );
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    return NextResponse.json(
+      { error: "InternalServerError", message: "Failed to delete meeting." },
+      { status: 500 }
+    );
+  }
+}

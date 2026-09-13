@@ -216,6 +216,29 @@ export default function HeatmapGrid({
     }
   };
 
+  const handleDeleteParticipant = async (pId: string, pName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const confirmMsg = lang === "ko" 
+      ? `'${pName}' 님의 일정을 삭제하시겠습니까?` 
+      : `Are you sure you want to remove '${pName}'?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch(`/api/v1/meet/${event.id}/respond?participant_id=${encodeURIComponent(pId)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to delete participant.");
+      }
+      if (filteredParticipantId === pId) {
+        setFilteredParticipantId(null);
+      }
+      onAvailabilitySubmitted();
+    } catch (err: any) {
+      alert(err.message || "삭제에 실패했습니다.");
+    }
+  };
+
   // Distinct Color Scaler: Gold/Amber for Max Possible, Green for Partial
   const getGroupCellColor = (bucket: HeatmapBucket | undefined) => {
     if (!bucket) return "bg-zinc-950/80 border-zinc-900";
@@ -619,9 +642,8 @@ export default function HeatmapGrid({
                   <span className="text-[11px] text-zinc-500">{t.noParticipants}</span>
                 ) : (
                   participants.map((p) => (
-                    <button
+                    <div
                       key={p.id}
-                      type="button"
                       onClick={() => {
                         if (filteredParticipantId === p.id) {
                           setFilteredParticipantId(null);
@@ -630,15 +652,23 @@ export default function HeatmapGrid({
                           loadParticipantSlots(p.name);
                         }
                       }}
-                      className={`px-2.5 py-1 rounded text-[11px] transition-colors border ${
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] transition-colors border cursor-pointer group ${
                         filteredParticipantId === p.id
                           ? "bg-zinc-100 text-zinc-950 border-white font-bold"
                           : "bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-600"
                       }`}
                       title={lang === "ko" ? "클릭하여 해당 참여자 일정만 보기" : "Click to view this participant only"}
                     >
-                      {p.name}
-                    </button>
+                      <span>{p.name}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteParticipant(p.id, p.name, e)}
+                        className="text-zinc-500 hover:text-rose-400 hover:bg-rose-950/40 w-3.5 h-3.5 flex items-center justify-center rounded transition-colors text-[9px]"
+                        title={lang === "ko" ? "참여자 일정 삭제" : "Delete submission"}
+                      >
+                        ✕
+                      </button>
+                    </div>
                   ))
                 )}
               </div>

@@ -506,4 +506,39 @@ export const dbOperations = {
     delP.run(participantId);
     return true;
   },
+
+  async deleteParticipantByName(eventId: string, userName: string): Promise<boolean> {
+    if (isTursoEnabled()) {
+      const pRes = await executeTursoQueries([
+        { sql: "SELECT id FROM participants WHERE event_id = ? AND name = ?", args: [eventId, userName] },
+      ]);
+      const pRows = pRes[0] as Array<{ id: string }>;
+      if (!pRows || pRows.length === 0) return false;
+      await this.deleteParticipant(pRows[0].id);
+      return true;
+    }
+
+    const db = getLocalDb();
+    const p = db.prepare("SELECT id FROM participants WHERE event_id = ? AND name = ?").get(eventId, userName) as { id: string } | undefined;
+    if (!p) return false;
+    await this.deleteParticipant(p.id);
+    return true;
+  },
+
+  async deleteEvent(eventId: string): Promise<boolean> {
+    if (isTursoEnabled()) {
+      await executeTursoQueries([
+        { sql: "DELETE FROM time_slots WHERE event_id = ?", args: [eventId] },
+        { sql: "DELETE FROM participants WHERE event_id = ?", args: [eventId] },
+        { sql: "DELETE FROM events WHERE id = ?", args: [eventId] },
+      ]);
+      return true;
+    }
+
+    const db = getLocalDb();
+    db.prepare("DELETE FROM time_slots WHERE event_id = ?").run(eventId);
+    db.prepare("DELETE FROM participants WHERE event_id = ?").run(eventId);
+    db.prepare("DELETE FROM events WHERE id = ?").run(eventId);
+    return true;
+  },
 };
