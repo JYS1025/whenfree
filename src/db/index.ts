@@ -489,4 +489,21 @@ export const dbOperations = {
     stmt.run(cutoffStr);
     return { deleted: true, cutoff_date: cutoffStr };
   },
+
+  async deleteParticipant(participantId: string): Promise<boolean> {
+    if (isTursoEnabled()) {
+      await executeTursoQueries([
+        { sql: "DELETE FROM time_slots WHERE participant_id = ?", args: [participantId] },
+        { sql: "DELETE FROM participants WHERE id = ?", args: [participantId] },
+      ]);
+      return true;
+    }
+
+    const db = getLocalDb();
+    const delSlots = db.prepare("DELETE FROM time_slots WHERE participant_id = ?");
+    delSlots.run(participantId);
+    const delP = db.prepare("DELETE FROM participants WHERE id = ?");
+    delP.run(participantId);
+    return true;
+  },
 };
