@@ -20,17 +20,46 @@
 
 ## ⚡ Overview
 
-**WhenFree** is a modern, API-first group scheduling service designed for both **autonomous AI agents and humans**. Inspired by the beloved simplicity of *When2meet*, WhenFree eliminates the friction of manual calendar checking by turning scheduling into a **1-click AI delegation workflow**.
+**WhenFree** is an API-first group scheduling service designed for both **autonomous AI agents and humans**. Inspired by the classic simplicity of *When2meet*, WhenFree eliminates the friction of manual calendar checking by turning scheduling into a **1-click AI delegation workflow**.
 
-### Why WhenFree?
+### Key Highlights
 * **Zero-Install AI Delegation**: No plugins, browser extensions, or MCP tools required. Pass the meeting link or prompt bundle to ChatGPT, Claude, or any LLM agent—it inspects your calendar, calculates travel buffers, and registers your availability via standard HTTP.
 * **Side-by-Side 2-Column Workspace**: Paint your availability on the left while watching the live group consensus heatmap update on the right in real time.
-* **Instant Golden Consensus Highlighting**: Highest-availability meeting windows are highlighted in distinct gold/amber, making optimal meeting slots immediately obvious at a glance.
+* **Instant Golden Consensus Highlighting**: Highest-availability meeting windows are highlighted in distinct gold/amber (`#FBBF24`), making optimal meeting slots immediately obvious at a glance.
 * **Edge & Serverless Ready**: Dual-driver database architecture powered by **Turso (LibSQL)** for global low-latency persistence and local **Node.js 23 SQLite** for development.
 
 ---
 
-## 📸 Key Features & Architecture
+## 📸 Product Walkthrough & Screenshots
+
+### 1. Real-Time Group Workspace & Consensus Heatmap
+> Paint your schedule on the left or delegate to your AI assistant. The right column visualizes group availability with instant gold consensus highlighting, live hover breakdowns, and participant deletion controls.
+
+<div align="center">
+  <img src="./docs/screenshots/02-workspace-full.png" alt="WhenFree Meeting Workspace" width="95%" />
+</div>
+
+---
+
+### 2. Fast, Frictionless Poll Creation
+> Create a new multi-party scheduling poll in seconds with customizable durations, daily time windows, and IANA timezone normalization.
+
+<div align="center">
+  <img src="./docs/screenshots/01-landing-page.png" alt="WhenFree Landing Page" width="95%" />
+</div>
+
+---
+
+### 3. Responsive Mobile Experience
+> Fully optimized for mobile browsers with zero horizontal overflow, touch drag selection, and 1-tap Google Calendar / `.ics` export.
+
+<div align="center">
+  <img src="./docs/screenshots/03-mobile-view.png" alt="WhenFree Mobile View" width="45%" />
+</div>
+
+---
+
+## 🏗️ Architecture & Protocols
 
 ```
                                   [ WhenFree Platform ]
@@ -103,13 +132,13 @@ Content-Type: application/json
   "timezone": "Asia/Seoul",
   "slots": [
     {
-      "start": "2026-09-15T10:00:00+09:00",
-      "end": "2026-09-15T12:00:00+09:00",
+      "start": "2026-09-28T10:00:00+09:00",
+      "end": "2026-09-28T12:00:00+09:00",
       "weight": 1.0
     },
     {
-      "start": "2026-09-15T14:00:00+09:00",
-      "end": "2026-09-15T16:00:00+09:00",
+      "start": "2026-09-28T14:00:00+09:00",
+      "end": "2026-09-28T16:00:00+09:00",
       "weight": 0.5
     }
   ],
