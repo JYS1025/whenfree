@@ -50,11 +50,11 @@
 
 ---
 
-### 3. Responsive Mobile Experience
-> Fully optimized for mobile browsers with zero horizontal overflow, touch drag selection, and 1-tap Google Calendar / `.ics` export.
+### 3. One-Click AI Delegation & Prompt Inspection
+> Preview or copy the structured handover bundle tailored for ChatGPT, Claude, or custom LLM agents—complete with calendar conflict parsing, 30-minute travel buffer calculation, and RESTful submission schemas.
 
 <div align="center">
-  <img src="./docs/screenshots/03-mobile-view.png" alt="WhenFree Mobile View" width="340" />
+  <img src="./docs/screenshots/03-ai-handover-modal.png" alt="WhenFree AI Handover Modal" width="95%" />
 </div>
 
 ---
