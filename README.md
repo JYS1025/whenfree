@@ -54,7 +54,7 @@
 > Fully optimized for mobile browsers with zero horizontal overflow, touch drag selection, and 1-tap Google Calendar / `.ics` export.
 
 <div align="center">
-  <img src="./docs/screenshots/03-mobile-view.png" alt="WhenFree Mobile View" width="45%" />
+  <img src="./docs/screenshots/03-mobile-view.png" alt="WhenFree Mobile View" width="340" />
 </div>
 
 ---
