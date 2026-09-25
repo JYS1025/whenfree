@@ -18,7 +18,7 @@
 
 ---
 
-## ⚡ Overview
+## Overview
 
 **WhenFree** is an API-first group scheduling service designed for both **autonomous AI agents and humans**. Inspired by the classic simplicity of *When2meet*, WhenFree eliminates the friction of manual calendar checking by turning scheduling into a **1-click AI delegation workflow**.
 
@@ -30,7 +30,7 @@
 
 ---
 
-## 📸 Product Walkthrough & Screenshots
+## Product Walkthrough & Screenshots
 
 ### 1. Real-Time Group Workspace & Consensus Heatmap
 > Paint your schedule on the left or delegate to your AI assistant. The right column visualizes group availability with instant gold consensus highlighting, live hover breakdowns, and participant deletion controls.
@@ -59,14 +59,14 @@
 
 ---
 
-## 🏗️ Architecture & Protocols
+## Architecture & Protocols
 
 ```
                                   [ WhenFree Platform ]
                                             │
                ┌────────────────────────────┴────────────────────────────┐
                ▼                                                         ▼
-     [ 👤 Human Interface ]                                   [ 🤖 AI Agent Protocol ]
+    [ Human Interface (Web UI) ]                              [ AI Agent Protocol (API) ]
   • Side-by-side 2-column grid                             • Content Negotiation (Accept: application/json)
   • Drag-to-paint availability                             • 30m prep/travel buffer calculations
   • Instant Gold Consensus highlighting                    • Real-name identity enforcement
@@ -83,7 +83,7 @@
                     • 30-Day Auto-TTL Cleanup (Vercel Cron)
 ```
 
-### 1. 🤖 AI-Native Delegation (1-Click Workflow)
+### 1. AI-Native Delegation (1-Click Workflow)
 Instead of manually opening your calendar app and painting 20 different time slots, WhenFree provides a structured prompt bundle. When pasted into ChatGPT or Claude:
 1. **Calendar Conflict Resolution**: Reads personal/work calendar events for the given date range.
 2. **30-Minute Transit & Prep Buffers**: Automatically applies a `0.5` weight buffer before and after busy events to prevent back-to-back transit stress.
@@ -92,22 +92,22 @@ Instead of manually opening your calendar app and painting 20 different time slo
 
 ---
 
-### 2. 🎨 High-Contrast Consensus Heatmap
-* **🟨 Optimal / Max Availability (`#FBBF24`)**: Prominently illuminated in bright gold/amber with exact participant counts.
-* **🟩 Partial Availability (`#059669` ~ `#064E3B`)**: Scaled green intensity indicating attendee overlap.
-* **⬛ Hard Conflict (`#09090B`)**: Neutral dark background.
+### 2. High-Contrast Consensus Heatmap
+* **Optimal / Max Availability (`#FBBF24`)**: Prominently illuminated in bright gold/amber with exact participant counts.
+* **Partial Availability (`#059669` ~ `#064E3B`)**: Scaled green intensity indicating attendee overlap.
+* **Hard Conflict (`#09090B`)**: Neutral dark background.
 * **Interactive Linked Hover**: Hovering over Top 1 ~ Top 5 recommendation cards immediately highlights the target time window on the grid.
 
 ---
 
-### 3. 🌐 Dual-Driver Persistence & Auto-TTL
+### 3. Dual-Driver Persistence & Auto-TTL
 * **Turso Cloud DB**: Uses standard HTTP pipeline requests over Edge/Serverless functions with zero native build dependencies.
 * **Deterministic UTC Math**: Prevents timezone date drift across KST, PST, UTC, and DST changes.
 * **Automated 30-Day TTL Maintenance**: Daily Vercel Cron (`/api/cron/cleanup`) and background lazy cleanup safely drop expired events and cascade-delete linked time slots.
 
 ---
 
-## 📡 RESTful API Reference
+## RESTful API Reference
 
 WhenFree exposes machine-readable endpoints adhering to the **Agent-Native Scheduling Protocol**:
 
@@ -148,7 +148,7 @@ Content-Type: application/json
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 * Node.js 20+ (Node.js 23 recommended for native SQLite testing)
@@ -177,7 +177,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🚢 Deployment
+## Deployment
 
 ### Deploy to Vercel (1-Click)
 1. Push your repository to GitHub.
@@ -193,6 +193,6 @@ docker run -d -p 3000:3000 -v $(pwd)/data:/app/data --name whenfree-app whenfree
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.

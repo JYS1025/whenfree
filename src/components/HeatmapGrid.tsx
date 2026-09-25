@@ -551,8 +551,8 @@ export default function HeatmapGrid({
                 </div>
               ) : (
                 <span className="text-zinc-500 text-[11px] flex items-center gap-1.5">
-                  <span>💡</span>
-                  <span>시간표 셀에 마우스를 올리면 누가 가능한지 확인할 수 있습니다.</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80"></span>
+                  <span>{t.hoverPrompt}</span>
                 </span>
               )}
             </div>

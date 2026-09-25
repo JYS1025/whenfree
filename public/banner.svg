@@ -31,14 +31,14 @@
 
     <!-- Key Feature Pills -->
     <g transform="translate(0, 170)">
-      <rect x="0" y="0" width="130" height="30" rx="6" fill="#18181b" stroke="#3f3f46" stroke-width="1"/>
-      <text x="12" y="19" fill="#e4e4e7" font-size="12" font-weight="600">⚡ Zero-Install</text>
+      <rect x="0" y="0" width="125" height="30" rx="6" fill="#18181b" stroke="#3f3f46" stroke-width="1"/>
+      <text x="14" y="19" fill="#e4e4e7" font-size="12" font-weight="600">Zero-Install</text>
 
-      <rect x="140" y="0" width="145" height="30" rx="6" fill="#18181b" stroke="#3f3f46" stroke-width="1"/>
-      <text x="152" y="19" fill="#e4e4e7" font-size="12" font-weight="600">🤖 AI Delegation</text>
+      <rect x="135" y="0" width="135" height="30" rx="6" fill="#18181b" stroke="#3f3f46" stroke-width="1"/>
+      <text x="149" y="19" fill="#e4e4e7" font-size="12" font-weight="600">AI Delegation</text>
 
-      <rect x="295" y="0" width="155" height="30" rx="6" fill="#18181b" stroke="#3f3f46" stroke-width="1"/>
-      <text x="307" y="19" fill="#e4e4e7" font-size="12" font-weight="600">📊 2-Column Matrix</text>
+      <rect x="280" y="0" width="155" height="30" rx="6" fill="#18181b" stroke="#3f3f46" stroke-width="1"/>
+      <text x="294" y="19" fill="#e4e4e7" font-size="12" font-weight="600">Consensus Matrix</text>
     </g>
 
     <!-- Tech Badges -->

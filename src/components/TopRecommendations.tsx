@@ -71,9 +71,8 @@ export default function TopRecommendations({
       >
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60 flex items-center gap-1">
-              <span>★</span>
-              <span>{t.optimalTime}</span>
+            <span className="text-[11px] uppercase font-bold tracking-wider text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60">
+              {t.optimalTime}
             </span>
             <span className="text-xs font-mono font-semibold text-emerald-300">
               {top1.available_percentage}% ({top1.fully_available.length + top1.flexible.length}명 가능)
